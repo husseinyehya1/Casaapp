@@ -1,16 +1,79 @@
 # casa_app
 
-A new Flutter project.
+تطبيق Flutter يعرض موقع الويب https://casa.study في WebView بملء الشاشة مع معالجة انقطاع الإنترنت، عناصر تحكم إخفاء/إظهار، وإعادة المحاولة التلقائية.
 
-## Getting Started
+الميزات الرئيسية
+- عرض ويب كامل باستخدام [`WebViewController`](lib/main.dart) وتنفيذ الجافاسكربت لإخفاء header/footer.
+- إدارة حالة الاتصال (إعادة المحاولة كل 4 ثوانٍ عند فقدان الإنترنت).
+- واجهة مبسطة مع عناصر تحكم للعودة/تحديث/تقديم كما في [`WebApp`](lib/main.dart) / [`_WebAppState`](lib/main.dart).
 
-This project is a starting point for a Flutter application.
+الملفات المهمة
+- تطبيق: [lib/main.dart](lib/main.dart) — يحتوي على [`WebApp`](lib/main.dart) وميزة فحص الإنترنت وإعادة التحميل.
+- الاعتمادات: [pubspec.yaml](pubspec.yaml) — يستخدم الحزمة `webview_flutter`.
 
-A few resources to get you started if this is your first Flutter project:
+تشغيل المشروع
+```sh
+flutter pub get
+flutter run
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+الوصف المفصل
+هذا المشروع يقدّم تطبيقًا بسيطًا ومباشرًا لعرض موقع ويب (https://casa.study) داخل WebView في تطبيق Flutter. الهدف الأساسي هو تقديم واجهة مستخدم مدمجة تعمل بشكل كامل، مع التعامل مع حالات انقطاع الإنترنت، وإخفاء عناصر واجهة الموقع (مثل header/footer) عبر تنفيذ JavaScript من داخل التطبيق.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+مكونات العمل الأساسية
+- WebViewController: مسؤول عن تحميل الصفحات، تنفيذ أوامر JavaScript، والانتقال بين الصفحات.
+- مراقبة الاتصال (Connectivity): يفحص حالة الإنترنت وحالما يكتشف انقطاعًا يبدأ آلية إعادة المحاولة كل 4 ثوانٍ حتى يعود الاتصال.
+- عناصر واجهة بسيطة: شريط أزرار يحتوي على زر للرجوع (back)، إعادة التحميل (reload)، وزر لتقديم الصفحة أو التفاعل حسب الحاجة.
+- طبقة خطأ/إعادة المحاولة: تعرض رسالة للمستخدم عند فقدان الشبكة وتعرض مؤشر إعادة المحاولة الآلي.
+
+تفاصيل التشغيل والهيكلية (موجز تقني)
+- عند بدء التطبيق يتم إنشاء WebViewController وتهيئته لتحميل https://casa.study.
+- يتم تمرير أوامر JavaScript لإخفاء عناصر الواجهة غير المرغوب بها داخل الصفحة (مثال: إخفاء header/footer) عبر controller.runJavascript أو runJavascriptReturningResult.
+- يتم الاستماع لحالة الاتصال بالإنترنت. عند فقدان الاتصال:
+  - يعرض التطبيق شاشة أو رسالة تفيد بعدم توفر الإنترنت.
+  - يبدأ مؤقت يعيد محاولة إعادة التحميل كل 4 ثوانٍ حتى ينجح الاتصال مجددًا.
+- تعامل الأخطاء: تحميل صفحات خطأ محليًا أو عرض Snackbar/Alert للمستخدم مع خيار إعادة المحاولة اليدوي.
+
+أمثلة تعليمات JavaScript المستخدم عادة لإخفاء عناصر (تخصيص حسب بنية الموقع)
+```js
+// أمثلة عامة — عدّل selectors بما يناسب DOM الخاص بالموقع
+document.querySelector('header')?.style.display = 'none';
+document.querySelector('footer')?.style.display = 'none';
+document.querySelectorAll('.promo-banner').forEach(e => e.style.display = 'none');
+```
+
+نصائح للتطوير والتخصيص
+- ضبط User-Agent إذا احتاج الموقع لإصدار معين من المتصفح.
+- التعامل مع صلاحيات الأندرويد/آي أو إس عند الحاجة (مثل الوصول إلى الكاميرا أو ملفات الجهاز).
+- تحسين تجربة المستخدم عند إعادة الاتصال: حفظ حالة التنقل داخل الويب (history) أو التوجيه إلى صفحة مخصصة بعد الاستعادة.
+- تسجيل السلوك (logging) لأخطاء WebView لتسهيل التصحيح.
+
+اختبار محلي وتشغيل
+1. تأكد من تثبيت Flutter (وتهيئة Android/iOS).
+2. نفّذ:
+```sh
+flutter pub get
+flutter run -d <device-id>
+```
+3. لاختبار انقطاع الشبكة: استخدم محاكيًا أو قطع اتصال الجهاز مؤقتًا ولاحظ سلوك إعادة المحاولة.
+
+مشكلات شائعة وحلول سريعة
+- WebView لا يعرض الصفحة: تأكد من صلاحيات الإنترنت في AndroidManifest.xml و Info.plist.
+- JavaScript لا يؤثر: تأكد أن JavaScript مُمكّن في إعدادات WebViewController وأن selectors صحيحة.
+- إعادة المحاولة غير متوقفة: راجع منطق المؤقت/Timer وتحقق من إلغاء الاستماع عندما يعود الاتصال.
+
+نقاط أمان وخصوصية
+- عند تنفيذ JavaScript أو تحميل محتوى خارجي، راعِ مخاطر XSS والبيانات الحساسة.
+- لا تحتفظ بمفاتيح أو بيانات حساسة داخل ملفات التطبيق بشكل صريح.
+- إن كنت تجمع تحليلات، أبلغ المستخدم وامتثل لسياسات الخصوصية اللازمة.
+
+مراجع سريعة داخل المشروع
+- lib/main.dart: مصدر المنطق الرئيسي (WebApp، حالة الاتصال، JavaScript).
+- pubspec.yaml: الحزم المستخدمة (مثل webview_flutter).
+- android/app/src/main/AndroidManifest.xml و ios/Runner/Info.plist: تحقق من أذونات الإنترنت والضبط اللازم.
+
+المطور
+المطور: hussein yehya
+
+ملاحظات أخيرة
+هذا المستند موجّه لتقديم فهم شامل وسريع للتطبيق ولمطوري المشروع الذين يريدون تعديله أو صيانته. إذا رغبت في توسيع التوثيق مع مخططات للهيكلية، لقطات شاشة، أو خطوات لتثبيت CI/CD — يمكن إضافتها لاحقًا.
